@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual-O - Симулятор спортивного ориентирования</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="loadingScreen" class="screen active">
+            <div class="loading-content">
+                <div class="game-logo">
+                    <h1><i class="fas fa-map-marked-alt"></i> VIRTUAL-O</h1>
+                    <p class="tagline">Симулятор спортивного ориентирования</p>
+                </div>
+                
+                <div class="loader-wrapper">
+                    <div class="loader-bar">
+                        <div class="loader-progress" id="loaderProgress"></div>
+                    </div>
+                    <div class="loading-text" id="loadingText">Инициализация игрового движка...</div>
+                </div>
+                
+                <div class="loading-tips">
+                    <div class="tip">
+                        <i class="fas fa-lightbulb"></i>
+                        <span>Совет: Планируйте маршрут заранее, учитывая рельеф местности</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="mainMenu" class="screen">
+            <div class="menu-content">
+                <div class="menu-header">
+                    <h1><i class="fas fa-compass"></i> VIRTUAL-O</h1>
+                    <p class="version">Версия 2.2</p>
+                </div>
+                
+                <div class="menu-main">
+                    <div class="menu-section">
+                        <button class="menu-btn large" onclick="showLevelSelect()">
+                            <i class="fas fa-play-circle"></i>
+                            <span>НАЧАТЬ ИГРУ</span>
+                        </button>
+                        
+                        <button class="menu-btn" onclick="showMultiplayer()">
+                            <i class="fas fa-users"></i>
+                            <span>СОРЕВНОВАНИЕ</span>
+                        </button>
+                        
+                        <button class="menu-btn" onclick="showTraining()">
+                            <i class="fas fa-graduation-cap"></i>
+                            <span>ОБУЧЕНИЕ</span>
+                        </button>
+                        
+                        <button class="menu-btn" onclick="showSettings()">
+                            <i class="fas fa-cog"></i>
+                            <span>НАСТРОЙКИ</span>
+                        </button>
+                        
+                        <button class="menu-btn" onclick="showEditor()">
+                            <i class="fas fa-edit"></i>
+                            <span>РЕДАКТОР КАРТ</span>
+                        </button>
+                        
+                        <button class="menu-btn" onclick="quitGame()">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>ВЫЙТИ ИЗ ИГРЫ</span>
+                        </button>
+                    </div>
+                    
+                    <div class="menu-sidebar">
+                        <div class="stats-card">
+                            <h3><i class="fas fa-trophy"></i> ВАШИ РЕКОРДЫ</h3>
+                            <div class="stat-item">
+                                <span>Лучшее время:</span>
+                                <strong id="bestTime">--:--</strong>
+                            </div>
+                            <div class="stat-item">
+                                <span>Пройдено карт:</span>
+                                <strong id="mapsCompleted">0/6</strong>
+                            </div>
+                            <div class="stat-item">
+                                <span>Ранг:</span>
+                                <strong class="rank">Новичок</strong>
+                            </div>
+                        </div>
+                        
+                        <div class="news-card">
+                            <h3><i class="fas fa-newspaper"></i> НОВОСТИ</h3>
+                            <p>Обновление 2.2: Реалистичные карты!</p>
+                            <p>Новая цветовая схема по стандартам IOF.</p>
+                            <p class="news-date">Сегодня</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="menu-footer">
+                    <div class="footer-info">
+                        <span>© 2024 Virtual-O. Реалистичный симулятор спортивного ориентирования</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="levelSelect" class="screen">
+            <div class="menu-content">
+                <div class="menu-header">
+                    <h1><i class="fas fa-map-marked-alt"></i> ВЫБЕРИТЕ КАРТУ</h1>
+                    <button class="btn-back" onclick="showMainMenu()">
+                        <i class="fas fa-arrow-left"></i> Назад
+                    </button>
+                </div>
+                
+                <div class="maps-container">
+                    <div class="maps-categories">
+                        <button class="category-btn active" onclick="filterMaps('all')">Все карты</button>
+                        <button class="category-btn" onclick="filterMaps('beginner')">Для начинающих</button>
+                        <button class="category-btn" onclick="filterMaps('advanced')">Продвинутые</button>
+                        <button class="category-btn" onclick="filterMaps('expert')">Экспертные</button>
+                    </div>
+                    
+                    <div class="maps-grid" id="mapsGrid">
+                    </div>
+                </div>
+                
+                <div class="map-info-panel">
+                    <div class="map-preview" id="selectedMapPreview">
+                        <div class="preview-placeholder">
+                            <i class="fas fa-map"></i>
+                            <p>Выберите карту для просмотра</p>
+                        </div>
+                    </div>
+                    
+                    <div class="map-details">
+                        <h3 id="selectedMapName">Название карты</h3>
+                        <div class="map-stats">
+                            <div class="map-stat">
+                                <i class="fas fa-ruler"></i>
+                                <span>Размер: <strong id="mapSize">--</strong></span>
+                            </div>
+                            <div class="map-stat">
+                                <i class="fas fa-flag"></i>
+                                <span>КП: <strong id="mapCPs">--</strong></span>
+                            </div>
+                            <div class="map-stat">
+                                <i class="fas fa-mountain"></i>
+                                <span>Масштаб: <strong id="mapScale">--</strong></span>
+                            </div>
+                            <div class="map-stat">
+                                <i class="fas fa-clock"></i>
+                                <span>Рекорд: <strong id="mapRecord">--:--</strong></span>
+                            </div>
+                        </div>
+                        
+                        <div class="map-description" id="mapDescription">
+                            Описание карты появится здесь после выбора.
+                        </div>
+                        
+                        <div class="map-actions">
+                            <button class="btn-play" onclick="startSelectedMap()" disabled id="playMapBtn">
+                                <i class="fas fa-play"></i> ИГРАТЬ НА ЭТОЙ КАРТЕ
+                            </button>
+                            <button class="btn-secondary" onclick="addToFavorites()">
+                                <i class="fas fa-star"></i> В ИЗБРАННОЕ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="settingsMenu" class="screen">
+            <div class="menu-content">
+                <div class="menu-header">
+                    <h1><i class="fas fa-cogs"></i> НАСТРОЙКИ</h1>
+                    <button class="btn-back" onclick="showMainMenu()">
+                        <i class="fas fa-arrow-left"></i> Назад
+                    </button>
+                </div>
+                
+                <div class="settings-tabs">
+                    <button class="tab-btn active" onclick="openTab('gameplayTab')">Игровой процесс</button>
+                    <button class="tab-btn" onclick="openTab('graphicsTab')">Графика</button>
+                    <button class="tab-btn" onclick="openTab('controlsTab')">Управление</button>
+                    <button class="tab-btn" onclick="openTab('audioTab')">Звук</button>
+                </div>
+                
+                <div class="settings-content">
+                    <div id="gameplayTab" class="tab-content active">
+                        <div class="setting">
+                            <label>Сложность</label>
+                            <select id="difficulty">
+                                <option value="easy">Легкая</option>
+                                <option value="normal" selected>Нормальная</option>
+                                <option value="hard">Сложная</option>
+                                <option value="expert">Эксперт</option>
+                            </select>
+                        </div>
+                        
+                        <div class="setting">
+                            <label>
+                                <input type="checkbox" id="mapAssist" checked>
+                                Помощь по карте
+                            </label>
+                        </div>
+                        
+                        <div class="setting">
+                            <label>
+                                <input type="checkbox" id="compassAssist" checked>
+                                Помощь по компасу
+                            </label>
+                        </div>
+                        
+                        <div class="setting">
+                            <label>
+                                <input type="checkbox" id="showRoute" checked>
+                                Показывать пройденный маршрут
+                            </label>
+                        </div>
+                        
+                        <div class="setting">
+                            <label>
+                                <input type="checkbox" id="showPosition" checked>
+                                Показывать позицию на карте
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="graphicsTab" class="tab-content">
+                        <div class="setting">
+                            <label>Качество графики</label>
+                            <select id="graphicsQuality">
+                                <option value="low">Низкое</option>
+                                <option value="medium" selected>Среднее</option>
+                                <option value="high">Высокое</option>
+                                <option value="ultra">Ультра</option>
+                            </select>
+                        </div>
+                        
+                        <div class="setting">
+                            <label>
+                                <input type="checkbox" id="fullscreen" checked>
+                                Полноэкранный режим
+                            </label>
+                        </div>
+                        
+                        <div class="setting">
+                            <label>
+                                <input type="checkbox" id="shadows" checked>
+                                Тени
+                            </label>
+                        </div>
+                        
+                        <div class="setting">
+                            <label>
+                                <input type="checkbox" id="textures" checked>
+                                Высококачественные текстуры
+                            </label>
+                        </div>
+                        
+                        <div class="setting">
+                            <label>Количество деревьев</label>
+                            <input type="range" id="treeAmount" min="100" max="1000" value="500">
+                            <span id="treeValue">500</span>
+                        </div>
+                    </div>
+                    
+                    <div id="controlsTab" class="tab-content">
+                        <div class="keybinding">
+                            <span>Движение вперед</span>
+                            <kbd>W</kbd>
+                        </div>
+                        <div class="keybinding">
+                            <span>Движение назад</span>
+                            <kbd>S</kbd>
+                        </div>
+                        <div class="keybinding">
+                            <span>Движение влево</span>
+                            <kbd>A</kbd>
+                        </div>
+                        <div class="keybinding">
+                            <span>Движение вправо</span>
+                            <kbd>D</kbd>
+                        </div>
+                        <div class="keybinding">
+                            <span>Бег</span>
+                            <kbd>SHIFT</kbd>
+                        </div>
+                        <div class="keybinding">
+                            <span>Двигать карту вверх</span>
+                            <kbd>↑</kbd>
+                        </div>
+                        <div class="keybinding">
+                            <span>Двигать карту вниз</span>
+                            <kbd>↓</kbd>
+                        </div>
+                        <div class="keybinding">
+                            <span>Двигать карту влево</span>
+                            <kbd>←</kbd>
+                        </div>
+                        <div class="keybinding">
+                            <span>Двигать карту вправо</span>
+                            <kbd>→</kbd>
+                        </div>
+                        <div class="keybinding">
+                            <span>Карта</span>
+                            <kbd>M</kbd>
+                        </div>
+                        <div class="keybinding">
+                            <span>Компас</span>
+                            <kbd>C</kbd>
+                        </div>
+                        <div class="keybinding">
+                            <span>Пауза</span>
+                            <kbd>ESC</kbd>
+                        </div>
+                        
+                        <div class="setting">
+                            <label>Чувствительность мыши</label>
+                            <input type="range" id="mouseSensitivity" min="1" max="10" value="5">
+                            <span id="sensitivityValue">5</span>
+                        </div>
+                    </div>
+                    
+                    <div id="audioTab" class="tab-content">
+                        <div class="setting">
+                            <label>Громкость музыки</label>
+                            <input type="range" id="musicVolume" min="0" max="100" value="50">
+                            <span id="musicValue">50%</span>
+                        </div>
+                        
+                        <div class="setting">
+                            <label>Громкость эффектов</label>
+                            <input type="range" id="sfxVolume" min="0" max="100" value="70">
+                            <span id="sfxValue">70%</span>
+                        </div>
+                        
+                        <div class="setting">
+                            <label>
+                                <input type="checkbox" id="ambientSounds" checked>
+                                Звуки окружения
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-actions">
+                    <button class="btn-save" onclick="saveSettings()">
+                        <i class="fas fa-save"></i> СОХРАНИТЬ НАСТРОЙКИ
+                    </button>
+                    <button class="btn-default" onclick="resetSettings()">
+                        <i class="fas fa-undo"></i> СБРОСИТЬ
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="trainingMenu" class="screen">
+            <div class="menu-content">
+                <div class="menu-header">
+                    <h1><i class="fas fa-graduation-cap"></i> ОБУЧЕНИЕ</h1>
+                    <button class="btn-back" onclick="showMainMenu()">
+                        <i class="fas fa-arrow-left"></i> Назад
+                    </button>
+                </div>
+                
+                <div class="training-container">
+                    <div class="training-sidebar">
+                        <div class="lesson active" onclick="selectLesson(1)">
+                            <i class="fas fa-map"></i>
+                            <span>Чтение карты</span>
+                        </div>
+                        <div class="lesson" onclick="selectLesson(2)">
+                            <i class="fas fa-compass"></i>
+                            <span>Работа с компасом</span>
+                        </div>
+                        <div class="lesson" onclick="selectLesson(3)">
+                            <i class="fas fa-route"></i>
+                            <span>Планирование маршрута</span>
+                        </div>
+                        <div class="lesson" onclick="selectLesson(4)">
+                            <i class="fas fa-running"></i>
+                            <span>Техника бега</span>
+                        </div>
+                        <div class="lesson" onclick="selectLesson(5)">
+                            <i class="fas fa-moon"></i>
+                            <span>Ночное ориентирование</span>
+                        </div>
+                    </div>
+                    
+                    <div class="training-content">
+                        <div id="lesson1" class="lesson-content active">
+                            <h2>Чтение топографической карты (стандарт IOF)</h2>
+                            <p>Спортивные карты для ориентирования имеют строго регламентированные цвета и символы.</p>
+                            <div class="lesson-grid">
+                                <div class="lesson-item">
+                                    <h3><i class="fas fa-mountain" style="color: #8B4513;"></i> Рельеф (коричневый)</h3>
+                                    <p>Коричневые линии — горизонтали, показывают высоту над уровнем моря. Бугры, ямы, промоины.</p>
+                                </div>
+                                
+                                <div class="lesson-item">
+                                    <h3><i class="fas fa-tree" style="color: #228B22;"></i> Растительность</h3>
+                                    <p>Белый — проходимый лес. Зеленый — медленный лес. Желтый — открытое пространство.</p>
+                                </div>
+                                
+                                <div class="lesson-item">
+                                    <h3><i class="fas fa-water" style="color: #1E90FF;"></i> Гидрография (синий)</h3>
+                                    <p>Синий цвет обозначает воду: реки, озера, болота, ручьи, канавы.</p>
+                                </div>
+                                
+                                <div class="lesson-item">
+                                    <h3><i class="fas fa-road" style="color: #000000;"></i> Искусственные объекты (черный)</h3>
+                                    <p>Черный цвет: дороги, здания, камни, тропы, границы, ЛЭП.</p>
+                                </div>
+                                
+                                <div class="lesson-item">
+                                    <h3><i class="fas fa-flag" style="color: #FF0000;"></i> Дистанция (красный)</h3>
+                                    <p>Красный: старт (△), КП (○), финиш (◎), линии дистанции.</p>
+                                </div>
+                                
+                                <div class="lesson-item">
+                                    <h3><i class="fas fa-exclamation-triangle" style="color: #800080;"></i> Разметка (фиолетовый)</h3>
+                                    <p>Фиолетовый: опасные зоны, обязательные маршруты, запретные участки.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="lesson2" class="lesson-content">
+                            <h2>Работа с компасом</h2>
+                            <p>Компас — основной инструмент для определения направления.</p>
+                            <div class="lesson-item">
+                                <h3><i class="fas fa-compass"></i> Определение азимута</h3>
+                                <p>Азимут — угол между направлением на север и направлением на объект.</p>
+                            </div>
+                        </div>
+                        
+                        <div id="lesson3" class="lesson-content">
+                            <h2>Планирование маршрута</h2>
+                            <p>Правильное планирование маршрута — ключ к успеху в ориентировании.</p>
+                            <div class="lesson-item">
+                                <h3><i class="fas fa-route"></i> Выбор пути</h3>
+                                <p>Выбирайте путь с учетом рельефа и типа местности.</p>
+                            </div>
+                        </div>
+                        
+                        <div id="lesson4" class="lesson-content">
+                            <h2>Техника бега</h2>
+                            <p>Правильная техника бега поможет сохранить силы на дистанции.</p>
+                        </div>
+                        
+                        <div id="lesson5" class="lesson-content">
+                            <h2>Ночное ориентирование</h2>
+                            <p>Особенности ориентирования в темное время суток.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="gameScreen" class="screen">
+            <div class="game-topbar">
+                <div class="game-info">
+                    <div class="game-time">
+                        <i class="fas fa-clock"></i>
+                        <span id="gameTimer">00:00</span>
+                    </div>
+                    <div class="game-cp">
+                        <i class="fas fa-flag"></i>
+                        <span id="currentCP">0/5</span>
+                    </div>
+                    <div class="game-distance">
+                        <i class="fas fa-ruler"></i>
+                        <span id="distanceToCP">0 м</span>
+                    </div>
+                    <div class="player-stats-mini">
+                        <div class="player-stat-mini">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span id="playerSpeed">5.0</span>
+                        </div>
+                        <div class="player-stat-mini">
+                            <i class="fas fa-battery-three-quarters"></i>
+                            <span id="playerStamina">100</span>
+                        </div>
+                        <div class="player-stat-mini">
+                            <i class="fas fa-level-up-alt"></i>
+                            <span id="trainingLevel">1</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="game-controls">
+                    <button class="game-btn" onclick="togglePause()" id="pauseBtn">
+                        <i class="fas fa-pause"></i> Пауза
+                    </button>
+                    <button class="game-btn" onclick="toggleMap()">
+                        <i class="fas fa-map"></i> Карта
+                    </button>
+                    <button class="game-btn" onclick="toggleCompass()">
+                        <i class="fas fa-compass"></i> Компас
+                    </button>
+                    <button class="game-btn" onclick="togglePlayerMarker()">
+                        <i class="fas fa-user"></i> Метка
+                    </button>
+                    <button class="game-btn" onclick="quitToMenu()">
+                        <i class="fas fa-sign-out-alt"></i> Выход
+                    </button>
+                </div>
+            </div>
+            
+            <div class="game-main">
+                <div class="game-leftpanel">
+                    <div class="panel-section">
+                        <h3><i class="fas fa-flag-checkered"></i> Контрольные пункты</h3>
+                        <div id="cpsList" class="cps-list">
+                        </div>
+                    </div>
+                    
+                    <div class="panel-section">
+                        <h3><i class="fas fa-route"></i> Маршрут</h3>
+                        <div class="route-info">
+                            <div class="route-stat">
+                                <span>Пройдено КП:</span>
+                                <strong id="routeCovered">0</strong>
+                            </div>
+                            <div class="route-stat">
+                                <span>Осталось КП:</span>
+                                <strong id="routeRemaining">5</strong>
+                            </div>
+                            <div class="route-stat">
+                                <span>Дистанция:</span>
+                                <strong id="trainingDistance">0 м</strong>
+                            </div>
+                        </div>
+                        
+                        <div class="training-progress">
+                            <div class="progress-label">
+                                <span>Тренировка:</span>
+                                <span id="trainingPercent">0%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="trainingProgress"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="game-center">
+                    <div class="game-canvas-container" id="gameCanvasContainer">
+                        <div class="terrain-detail">
+                            <div>Высота: <span id="currentHeight">0</span>м</div>
+                            <div>Уклон: <span id="terrainSlope">0</span>°</div>
+                        </div>
+                        
+                        <div class="controls-hint">
+                            <p><strong>Управление:</strong></p>
+                            <p>WASD - Движение | Мышь - Осмотр | SHIFT - Бег</p>
+                            <p>ESC - Пауза | M - Карта | C - Компас</p>
+                            <p>Стрелки - Двигать карту</p>
+                            <p>Клик - Захват мыши</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="game-rightpanel">
+                    <div class="panel-section">
+                        <h3><i class="fas fa-map"></i> Топографическая карта</h3>
+                        <div class="map-container">
+                            <canvas id="topoMapCanvas"></canvas>
+                            <div class="map-tools">
+                                <button class="map-tool" onclick="zoomMap('in')" title="Приблизить">
+                                    <i class="fas fa-search-plus"></i>
+                                </button>
+                                <button class="map-tool" onclick="zoomMap('out')" title="Отдалить">
+                                    <i class="fas fa-search-minus"></i>
+                                </button>
+                                <button class="map-tool" onclick="centerOnPlayer()" title="Центрировать на игроке">
+                                    <i class="fas fa-crosshairs"></i>
+                                </button>
+                                <button class="map-tool" onclick="togglePlayerMarker()" title="Скрыть метку игрока">
+                                    <i class="fas fa-user"></i>
+                                </button>
+                                <button class="map-tool" onclick="toggleMapFollow()" title="Следовать за игроком">
+                                    <i class="fas fa-location-arrow"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="panel-section">
+                        <h3><i class="fas fa-compass"></i> Компас</h3>
+                        <div class="compass-info-small">
+                            <div class="compass-data">
+                                <span>Азимут:</span>
+                                <strong id="compassBearing">0°</strong>
+                            </div>
+                            <div class="compass-data">
+                                <span>Направление:</span>
+                                <strong id="compassDirection">С</strong>
+                            </div>
+                        </div>
+                        <div class="compass-controls">
+                            <button class="compass-btn" onclick="takeBearing()" title="Взять азимут">
+                                <i class="fas fa-crosshairs"></i> Взять азимут
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="panel-section elevation-section">
+                        <h3><i class="fas fa-mountain"></i> Профиль высот</h3>
+                        <div class="elevation-profile">
+                            <canvas id="elevationCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="game-bottombar">
+                <div class="navigation-info">
+                    <div class="nav-direction">
+                        <i class="fas fa-location-arrow" id="directionArrow"></i>
+                        <span id="directionText">Нажмите на экран для захвата мыши</span>
+                    </div>
+                    <div class="nav-hint" id="navigationHint">
+                        Двигайтесь к первому контрольному пункту
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="action-btn" onclick="toggleMap()">
+                        <i class="fas fa-map-marked-alt"></i> Карта
+                    </button>
+                    <button class="action-btn" onclick="toggleCompass()">
+                        <i class="fas fa-compass"></i> Компас
+                    </button>
+                    <button class="action-btn" onclick="togglePlayerMarker()">
+                        <i class="fas fa-user"></i> Метка
+                    </button>
+                    <button class="action-btn" onclick="takeBearing()">
+                        <i class="fas fa-crosshairs"></i> Азимут
+                    </button>
+                </div>
+            </div>
+            
+            <div class="fullscreen-map" id="fullscreenMap">
+                <div class="map-header">
+                    <h3>ТОПОГРАФИЧЕСКАЯ КАРТА (стандарт IOF)</h3>
+                    <div class="map-controls">
+                        <div class="compass-overlay" id="mapCompass">
+                            <div class="compass-mini">
+                                <div class="compass-mini-arrow"></div>
+                            </div>
+                        </div>
+                        <button class="map-control-btn" onclick="zoomMap('in')" title="Приблизить">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button class="map-control-btn" onclick="zoomMap('out')" title="Отдалить">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <button class="map-control-btn" onclick="centerOnPlayer()" title="Центрировать на игроке">
+                            <i class="fas fa-crosshairs"></i>
+                        </button>
+                        <button class="map-control-btn" onclick="togglePlayerMarker()" title="Скрыть метку игрока">
+                            <i class="fas fa-user"></i>
+                        </button>
+                        <button class="map-control-btn" onclick="toggleMapFollow()" title="Следовать за игроком">
+                            <i class="fas fa-location-arrow"></i>
+                        </button>
+                        <button class="map-control-btn" onclick="toggleFullMap()" title="Вся карта">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <button class="close-map" onclick="hideMap()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <canvas id="fullMapCanvas"></canvas>
+                <div class="map-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #8B4513;"></div>
+                        <span>Рельеф</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FFFFFF;"></div>
+                        <span>Проходимый лес</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #90EE90;"></div>
+                        <span>Медленный лес</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FFFF00;"></div>
+                        <span>Открытое пространство</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #1E90FF;"></div>
+                        <span>Вода</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #000000;"></div>
+                        <span>Дороги/Камни</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FF0000;"></div>
+                        <span>Старт/КП/Финиш</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color player"></div>
+                        <span>Игрок</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="fullscreen-compass" id="fullscreenCompass">
+                <div class="compass-header">
+                    <h3>КОМПАС</h3>
+                    <button class="close-compass" onclick="hideCompass()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="compass-large">
+                    <div class="compass-dial">
+                        <div class="compass-degree" id="fullCompassDegree">0°</div>
+                        <div class="compass-arrow"></div>
+                    </div>
+                    <div class="compass-info">
+                        <div class="compass-data">
+                            <span>Азимут:</span>
+                            <strong id="fullCompassBearing">0°</strong>
+                        </div>
+                        <div class="compass-data">
+                            <span>Направление:</span>
+                            <strong id="fullCompassDirection">С</strong>
+                        </div>
+                    </div>
+                    <div class="compass-actions">
+                        <button class="compass-action-btn" onclick="takeBearing()">
+                            <i class="fas fa-crosshairs"></i> Взять азимут
+                        </button>
+                        <button class="compass-action-btn" onclick="resetBearing()">
+                            <i class="fas fa-redo"></i> Сбросить
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pause-menu" id="pauseMenu">
+                <div class="pause-content">
+                    <h2><i class="fas fa-pause"></i> ИГРА НА ПАУЗЕ</h2>
+                    
+                    <div class="pause-stats">
+                        <div class="pause-stat">
+                            <span>Время:</span>
+                            <strong id="pauseTime">00:00</strong>
+                        </div>
+                        <div class="pause-stat">
+                            <span>Найдено КП:</span>
+                            <strong id="pauseCPs">0/5</strong>
+                        </div>
+                        <div class="pause-stat">
+                            <span>Дистанция:</span>
+                            <strong id="pauseDistance">0 м</strong>
+                        </div>
+                        <div class="pause-stat">
+                            <span>Уровень:</span>
+                            <strong id="pauseLevel">1</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="pause-actions">
+                        <button class="pause-btn" onclick="resumeGame()">
+                            <i class="fas fa-play"></i> ПРОДОЛЖИТЬ
+                        </button>
+                        <button class="pause-btn" onclick="restartGame()">
+                            <i class="fas fa-redo"></i> ЗАНОВО
+                        </button>
+                        <button class="pause-btn" onclick="quitToMenu()">
+                            <i class="fas fa-home"></i> В МЕНЮ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="completionScreen" class="screen">
+            <div class="completion-content">
+                <div class="completion-header">
+                    <h1><i class="fas fa-flag-checkered"></i> МАРШРУТ ПРОЙДЕН!</h1>
+                    <p class="map-name" id="completedMapName">Лесной парк</p>
+                </div>
+                
+                <div class="completion-results">
+                    <div class="result-card main">
+                        <div class="result-label">ОБЩЕЕ ВРЕМЯ</div>
+                        <div class="result-value" id="finalTime">00:00</div>
+                        <div class="result-medal">
+                            <i class="fas fa-medal bronze"></i>
+                            <span>БРОНЗА</span>
+                        </div>
+                    </div>
+                    
+                    <div class="results-grid">
+                        <div class="result-card">
+                            <div class="result-label">НАЙДЕНО КП</div>
+                            <div class="result-value" id="finalCps">0/5</div>
+                        </div>
+                        
+                        <div class="result-card">
+                            <div class="result-label">ПРОЙДЕННОЕ РАССТОЯНИЕ</div>
+                            <div class="result-value" id="finalDistance">0 м</div>
+                        </div>
+                        
+                        <div class="result-card">
+                            <div class="result-label">УРОВЕНЬ ТРЕНИРОВКИ</div>
+                            <div class="result-value" id="finalLevel">1</div>
+                        </div>
+                        
+                        <div class="result-card">
+                            <div class="result-label">ОЧКИ НАВИГАЦИИ</div>
+                            <div class="result-value" id="finalScore">0/100</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="completion-actions">
+                    <button class="completion-btn" onclick="retryMap()">
+                        <i class="fas fa-redo"></i> ПОВТОРИТЬ
+                    </button>
+                    <button class="completion-btn primary" onclick="backToMainMenu()">
+                        <i class="fas fa-home"></i> В МЕНЮ
+                    </button>
+                    <button class="completion-btn" onclick="shareResult()">
+                        <i class="fas fa-share"></i> ПОДЕЛИТЬСЯ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="messageModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Уведомление</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalMessage">
+                Сообщение
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn" onclick="closeModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+    
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            if (typeof initGame === 'function') {
+                initGame();
+            }
+            
+            const sliders = document.querySelectorAll('input[type="range"]');
+            sliders.forEach(slider => {
+                const valueSpan = document.getElementById(slider.id + 'Value');
+                if (valueSpan) {
+                    valueSpan.textContent = slider.value;
+                    
+                    slider.addEventListener('input', () => {
+                        valueSpan.textContent = slider.value;
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
